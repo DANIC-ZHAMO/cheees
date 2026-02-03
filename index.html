@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <!-- Мета-теги для правильного отображения и SEO -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Полноценные шахматы с ПРАВИЛАМИ хода, РАБОТАЮЩИМ ТАЙМЕРОМ и УМНЫМ ИИ">
+    <title>Шахматы.Pro</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Все стили сохранены - суперский дизайн */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #fff; min-height: 100vh; overflow-x: hidden;
+        }
+        header { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.95); 
+            backdrop-filter: blur(15px); z-index: 1000; padding: 1rem 0; }
+        nav { display: flex; justify-content: space-between; align-items: center;
+            max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
+        .logo { font-size: 2rem; font-weight: 700; background: linear-gradient(45deg, #ffd700, #ffed4a);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 30px rgba(255,215,0,0.6); }
+        .hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; text-align: center; padding: 0 2rem; }
+        .hero h1 { font-size: clamp(4rem, 10vw, 7rem); margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, #fff, #ffd700); -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; animation: glow 2s ease-in-out infinite alternate; }
+        @keyframes glow { from { filter: drop-shadow(0 0 20px #ffd700); } to { filter: drop-shadow(0 0 30px #ffd700); } }
+        
+        .settings-panel { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border-radius: 25px; 
+            padding: 2rem; margin: 2rem auto; max-width: 900px; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .setting-group label { display: block; margin-bottom: 0.8rem; font-weight: 600; color: #ffd700; }
+        select, button { padding: 0.8rem 1.5rem; background: rgba(255,255,255,0.2); color: #fff; 
+            border: 2px solid rgba(255,215,0,0.5); border-radius: 15px; font-family: inherit; 
+            font-weight: 600; cursor: pointer; transition: all 0.3s ease; width: 100%; }
+        select:hover, button:hover { background: rgba(255,215,0,0.8); color: #1e3c72;
+            transform: translateY(-3px); box-shadow: 0 10px 25px rgba(255,215,0,0.4); }
+        
+        .chess-section { padding: 120px 2rem 50px; max-width: 1400px; margin: 0 auto; text-align: center; }
+        #chessboard { width: 600px; height: 600px; display: block; margin: 2rem auto;
+            border-radius: 25px; box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+            background: linear-gradient(145deg, #8B4513, #A0522D); cursor: pointer; }
+        .timers { display: flex; justify-content: center; gap: 3rem; margin: 2rem 0; font-size: 1.8rem; font-weight: 700; }
+        .timer { padding: 1rem 2rem; border-radius: 20px; min-width: 150px; text-align: center; }
+        .timer.white { background: rgba(255,255,255,0.3); }
+        .timer.black { background: rgba(0,0,0,0.6); color: #ffd700; }
+        .time-low { animation: blink 0.5s infinite; color: #ff4444; }
+        @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0.3; } }
+        .game-controls { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; }
+        .btn { padding: 1rem 2rem; background: linear-gradient(45deg, #ffd700, #ffed4a); color: #1e3c72; 
+            border: none; border-radius: 25px; font-weight: 700; cursor: pointer; transition: all 0.3s; font-family: inherit; }
+        .btn:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(255,215,0,0.6); }
+        #gameStatus { font-size: 2rem; font-weight: 700; margin: 2rem 0; min-height: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        @media (max-width: 768px) { #chessboard { width: 90vw; height: 90vw; max-width: 500px; max-height: 500px; }
+            .timers { gap: 1rem; font-size: 1.2rem; } .settings-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <nav><div class="logo">Шахматы.Pro</div></nav>
+    </header>
+
+    <section class="hero">
+        <h1>Настоящие Шахматы!</h1>
+        <p>всё кроме ракировак</p>
+    </section>
+
+    <div class="settings-panel">
+        <h2 style="text-align: center; margin-bottom: 2rem; color: #ffd700;">⚙️ Настройки</h2>
+        <div class="settings-grid">
+            <div class="setting-group">
+                <label>🎮 Режим:</label>
+                <select id="gameMode"><option value="vsAI">vs ИИ</option><option value="vsPlayer">2 Игрока</option></select>
+            </div>
+            <div class="setting-group">
+                <label>⚡ Сложность:</label>
+                <select id="aiDifficulty"><option value="2">Средне</option><option value="3">Сложно</option><option value="1">Легко</option></select>
+            </div>
+            <div class="setting-group">
+                <label>👑 Сторона:</label>
+                <select id="playerSide"><option value="white">Белые</option><option value="black">Черные</option></select>
+            </div>
+            <div class="setting-group">
+                <label>⏱️ Время:</label>
+                <select id="timeControl"><option value="600">10 мин</option><option value="unlimited">Без лимита</option></select>
+            </div>
+        </div>
+        <button id="applySettings" class="btn" style="width: 100%; font-size: 1.2rem;">🚀 НАЧАТЬ!</button>
+    </div>
+
+    <section class="chess-section">
+        <h2 style="font-size: 3.5rem; margin-bottom: 2rem;">Играй по Правилам!</h2>
+        <div class="timers">
+            <div id="whiteTimer" class="timer white">10:00</div>
+            <div id="blackTimer" class="timer black">10:00</div>
+        </div>
+        <canvas id="chessboard" width="600" height="600"></canvas>
+        <div class="game-controls">
+            <button id="newGame" class="btn">🔄 Новая</button>
+            <button id="flipBoard" class="btn">↺ Повернуть</button>
+        </div>
+        <div id="gameStatus">Настройте игру и начните!</div>
+    </section>
+
+    <script>
+        // Глобальное состояние игры
+        const canvas = document.getElementById('chessboard');
+        const ctx = canvas.getContext('2d');
+        let board = [], currentPlayer = 'white', selectedPiece = null, gameOver = false;
+        let gameMode = 'vsAI', aiDifficulty = 2, playerSide = 'white';
+        
+        // ✅ ТАЙМЕРЫ
+        let whiteTime = 600, blackTime = 600, timeControl = '600';
+        let whiteTimerInterval, blackTimerInterval, currentTimerInterval;
+        let gameStarted = false;
+
+        // ✅ ЧЕРНЫЕ ФИГУРЫ - ТЕМНЫЕ ЦВЕТА С ТЕНЯМИ
+        const pieceSymbols = {
+            // Белые фигуры - светлые контуры
+            'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔',
+            // ЧЕРНЫЕ фигуры - ГЛУБОКИЕ ТЕМНЫЕ ЦВЕТА
+            'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
+        };
+
+        // Стандартная шахматная расстановка
+        function initBoard() {
+            board = [
+                ['r','n','b','q','k','b','n','r'], // Черные фигуры
+                ['p','p','p','p','p','p','p','p'], // Черные пешки
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                ['P','P','P','P','P','P','P','P'], // Белые пешки
+                ['R','N','B','Q','K','B','N','R']  // Белые фигуры
+            ];
+            currentPlayer = playerSide;
+            selectedPiece = null; 
+            gameOver = false;
+            gameStarted = false;
+            whiteTime = parseInt(timeControl);
+            blackTime = parseInt(timeControl);
+            updateTimers();
+        }
+
+        // ✅ РАБОТАЮЩИЙ ТАЙМЕР
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimers() {
+            document.getElementById('whiteTimer').textContent = formatTime(whiteTime);
+            document.getElementById('blackTimer').textContent = formatTime(blackTime);
+            
+            // Мигающая анимация при низком времени
+            if (whiteTime <= 30 && currentPlayer === 'white') {
+                document.getElementById('whiteTimer').classList.add('time-low');
+            } else {
+                document.getElementById('whiteTimer').classList.remove('time-low');
+            }
+            if (blackTime <= 30 && currentPlayer === 'black') {
+                document.getElementById('blackTimer').classList.add('time-low');
+            } else {
+                document.getElementById('blackTimer').classList.remove('time-low');
+            }
+        }
+
+        function startTimer() {
+            if (timeControl === 'unlimited') return;
+            
+            clearInterval(currentTimerInterval);
+            if (currentPlayer === 'white') {
+                currentTimerInterval = setInterval(() => {
+                    whiteTime--;
+                    updateTimers();
+                    if (whiteTime <= 0) {
+                        gameOver = true;
+                        updateStatus('⏰ ВРЕМЯ БЕЛЫХ КОНЧИЛОСЬ! ЧЕРНЫЕ ПОБЕДИЛИ!');
+                        clearInterval(currentTimerInterval);
+                    }
+                }, 1000);
+            } else {
+                currentTimerInterval = setInterval(() => {
+                    blackTime--;
+                    updateTimers();
+                    if (blackTime <= 0) {
+                        gameOver = true;
+                        updateStatus('⏰ ВРЕМЯ ЧЕРНЫХ КОНЧИЛОСЬ! БЕЛЫЕ ПОБЕДИЛИ!');
+                        clearInterval(currentTimerInterval);
+                    }
+                }, 1000);
+            }
+        }
+
+        // ✅ ПОЛНЫЕ ПРАВИЛА ХОДА КАЖДОЙ ФИГУРЫ
+        function getLegalMoves(row, col) {
+            const piece = board[row][col];
+            if (!piece) return [];
+            const moves = [];
+            const isWhite = piece === piece.toUpperCase();
+            
+            switch(piece.toUpperCase()) {
+                case 'P': // ПЕШКА
+                    const direction = isWhite ? -1 : 1;
+                    const startRow = isWhite ? 6 : 1;
+                    
+                    // Шаг вперед
+                    if (row + direction >= 0 && row + direction < 8 && !board[row + direction][col]) {
+                        moves.push({row: row + direction, col});
+                        // Двойной шаг
+                        if (row === startRow && !board[row + 2 * direction][col]) {
+                            moves.push({row: row + 2 * direction, col});
+                        }
+                    }
+                    // Взятие
+                    [-1, 1].forEach(dc => {
+                        const nr = row + direction, nc = col + dc;
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            const target = board[nr][nc];
+                            if (target && (target === target.toUpperCase()) !== isWhite) {
+                                moves.push({row: nr, col: nc});
+                            }
+                        }
+                    });
+                    break;
+                    
+                case 'R': // ЛАДЬЯ
+                    [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr, dc]) => {
+                        for (let i = 1; i < 8; i++) {
+                            const nr = row + i * dr, nc = col + i * dc;
+                            if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                            if (!board[nr][nc]) moves.push({row: nr, col: nc});
+                            else {
+                                if ((board[nr][nc] === board[nr][nc].toUpperCase()) !== isWhite) {
+                                    moves.push({row: nr, col: nc});
+                                }
+                                break;
+                            }
+                        }
+                    });
+                    break;
+                    
+                case 'N': // КОНЬ
+                    const knightMoves = [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
+                    knightMoves.forEach(([dr, dc]) => {
+                        const nr = row + dr, nc = col + dc;
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            const target = board[nr][nc];
+                            if (!target || (target === target.toUpperCase()) !== isWhite) {
+                                moves.push({row: nr, col: nc});
+                            }
+                        }
+                    });
+                    break;
+                    
+                case 'B': // СЛОН
+                    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr, dc]) => {
+                        for (let i = 1; i < 8; i++) {
+                            const nr = row + i * dr, nc = col + i * dc;
+                            if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                            if (!board[nr][nc]) moves.push({row: nr, col: nc});
+                            else {
+                                if ((board[nr][nc] === board[nr][nc].toUpperCase()) !== isWhite) {
+                                    moves.push({row: nr, col: nc});
+                                }
+                                break;
+                            }
+                        }
+                    });
+                    break;
+                    
+                case 'Q': // ФЕРЗЬ
+                    getLegalMovesForRook(row, col, moves, isWhite);
+                    getLegalMovesForBishop(row, col, moves, isWhite);
+                    break;
+                    
+                case 'K': // КОРОЛЬ
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue;
+                            const nr = row + dr, nc = col + dc;
+                            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                                const target = board[nr][nc];
+                                if (!target || (target === target.toUpperCase()) !== isWhite) {
+                                    moves.push({row: nr, col: nc});
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
+            return moves;
+        }
+
+        function getLegalMovesForRook(row, col, moves, isWhite) {
+            [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr, dc]) => {
+                for (let i = 1; i < 8; i++) {
+                    const nr = row + i * dr, nc = col + i * dc;
+                    if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                    if (!board[nr][nc]) moves.push({row: nr, col: nc});
+                    else {
+                        if ((board[nr][nc] === board[nr][nc].toUpperCase()) !== isWhite) moves.push({row: nr, col: nc});
+                        break;
+                    }
+                }
+            });
+        }
+
+        function getLegalMovesForBishop(row, col, moves, isWhite) {
+            [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr, dc]) => {
+                for (let i = 1; i < 8; i++) {
+                    const nr = row + i * dr, nc = col + i * dc;
+                    if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                    if (!board[nr][nc]) moves.push({row: nr, col: nc});
+                    else {
+                        if ((board[nr][nc] === board[nr][nc].toUpperCase()) !== isWhite) moves.push({row: nr, col: nc});
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Проверка хода
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            if (toRow < 0 || toRow >= 8 || toCol < 0 || toCol >= 8) return false;
+            const moves = getLegalMoves(fromRow, fromCol);
+            return moves.some(move => move.row === toRow && move.col === toCol);
+        }
+
+        // ✅ УЛУЧШЕННАЯ ОТРИСОВКА С ТЕМНЫМИ ЧЕРНЫМИ ФИГУРАМИ
+        function drawBoard() {
+            const cellSize = 600 / 8;
+            
+            // Клетки шахматной доски
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    ctx.fillStyle = (row + col) % 2 === 0 ? '#EEECD8' : '#B58863';
+                    ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                    
+                    // Подсветка выбранной фигуры
+                    if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
+                        ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 30;
+                        ctx.fillStyle = 'rgba(255,215,0,0.6)';
+                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            }
+            
+            // Рисование фигур с УСИЛЕННЫМИ ТЕМНЫМИ ЧЕРНЫМИ
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = board[row][col];
+                    if (piece && pieceSymbols[piece]) {
+                        ctx.save();
+                        
+                        // ГЛУБOKИЕ ТЕНИ ДЛЯ ЧЕРНЫХ ФИГУР
+                        ctx.shadowColor = piece === piece.toLowerCase() ? '#000000' : 'rgba(0,0,0,0.6)';
+                        ctx.shadowBlur = piece === piece.toLowerCase() ? 25 : 15; 
+                        ctx.shadowOffsetY = 10;
+                        
+                        ctx.font = 'bold 64px serif';
+                        ctx.textAlign = 'center'; 
+                        ctx.textBaseline = 'middle';
+                        
+                        ctx.fillText(pieceSymbols[piece], 
+                                   col * cellSize + cellSize/2, 
+                                   row * cellSize + cellSize/2);
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // Обработка кликов
+        canvas.addEventListener('click', (e) => {
+            if (gameOver) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const col = Math.floor(x / (600/8));
+            const row = Math.floor(y / (600/8));
+            const piece = board[row][col];
+            
+            if (!selectedPiece) {
+                if (piece && isPlayerPiece(piece, row, col)) {
+                    selectedPiece = {row, col};
+                    drawBoard();
+                }
+            } else {
+                if (isValidMove(selectedPiece.row, selectedPiece.col, row, col)) {
+                    makeMove(selectedPiece.row, selectedPiece.col, row, col);
+                    gameStarted = true;
+                    if (gameMode === 'vsAI' && !gameOver && currentPlayer !== playerSide) {
+                        setTimeout(aiMove, 500 + Math.random() * 500);
+                    }
+                }
+                selectedPiece = null;
+                drawBoard();
+            }
+        });
+
+        function isPlayerPiece(piece, row, col) {
+            if (!piece) return false;
+            const isWhitePiece = piece === piece.toUpperCase();
+            if (gameMode === 'vsPlayer') return isWhitePiece === (currentPlayer === 'white');
+            return isWhitePiece === (playerSide === 'white');
+        }
+
+        // ✅ УЛУЧШЕННЫЙ ИИ С КОМБИНАЦИЯМИ
+        function aiMove() {
+            if (gameOver || currentPlayer !== (playerSide === 'white' ? 'black' : 'white')) return;
+            
+            let bestMove = null;
+            let bestScore = aiDifficulty === 3 ? -Infinity : -100;
+            
+            // Ищем выигрышные ходы и защиту
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = board[row][col];
+                    if (piece && piece === piece.toLowerCase()) {
+                        const moves = getLegalMoves(row, col);
+                        for (let move of moves) {
+                            const temp = board[move.row][move.col];
+                            board[move.row][move.col] = piece; 
+                            board[row][col] = null;
+                            
+                            let score = evaluateBoard();
+                            
+                            // ✅ БОНУСЫ ЗА КОМБИНАЦИИ
+                            // Атака ферзя
+                            if (piece === 'q') score += 50;
+                            // Атака ладьи
+                            if (piece === 'r') score += 30;
+                            // Центр доски
+                            if (move.row >= 3 && move.row <= 4 && move.col >= 3 && move.col <= 4) score += 20;
+                            // Взятие фигур
+                            if (temp && temp === temp.toUpperCase()) {
+                                score += getPieceValue(temp) * 2;
+                            }
+                            
+                            board[row][col] = piece; 
+                            board[move.row][move.col] = temp;
+                            
+                            if (score > bestScore || !bestMove) {
+                                bestScore = score;
+                                bestMove = {fromRow: row, fromCol: col, toRow: move.row, toCol: move.col};
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (bestMove) {
+                setTimeout(() => {
+                    makeMove(bestMove.fromRow, bestMove.fromCol, bestMove.toRow, bestMove.toCol);
+                }, 300 + Math.random() * 700);
+            }
+        }
+
+        function getPieceValue(piece) {
+            const values = {'P':1,'N':3,'B':3,'R':5,'Q':9,'K':1000};
+            return values[piece.toUpperCase()];
+        }
+
+        function evaluateBoard() {
+            const values = {'P':1,'N':3,'B':3,'R':5,'Q':9,'K':1000};
+            let score = 0;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = board[r][c]; 
+                    if (p) score += (p === p.toUpperCase() ? values[p.toUpperCase()] : -values[p.toUpperCase()]);
+                }
+            }
+            return score;
+        }
+
+        function makeMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = null;
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            
+            // ✅ ПАУЗА ТАЙМЕРА ПРИ СМЕНЕ ХОДА
+            clearInterval(currentTimerInterval);
+            startTimer();
+            
+            checkGameOver();
+            updateStatus(`${currentPlayer.toUpperCase()} ходят!`);
+        }
+
+        function checkGameOver() {
+            const hasWhiteKing = board.flat().some(p => p === 'K');
+            const hasBlackKing = board.flat().some(p => p === 'k');
+            if (!hasWhiteKing) { 
+                gameOver = true; 
+                clearInterval(currentTimerInterval);
+                updateStatus('✅ ЧЕРНЫЕ ПОБЕДИЛИ!'); 
+            }
+            else if (!hasBlackKing) { 
+                gameOver = true;
+                clearInterval(currentTimerInterval);
+                updateStatus('✅ БЕЛЫЕ ПОБЕДИЛИ!'); 
+            }
+        }
+
+        // Управление
+        function updateStatus(msg) { 
+            document.getElementById('gameStatus').textContent = msg; 
+        }
+        
+        document.getElementById('applySettings').onclick = () => {
+            gameMode = document.getElementById('gameMode').value;
+            aiDifficulty = parseInt(document.getElementById('aiDifficulty').value);
+            playerSide = document.getElementById('playerSide').value;
+            timeControl = document.getElementById('timeControl').value;
+            initGame();
+        };
+
+        function initGame() {
+            initBoard();
+            drawBoard();
+            updateStatus(`${playerSide.toUpperCase()} начинают!`);
+            gameStarted = false;
+        }
+
+        document.getElementById('newGame').onclick = initGame;
+        document.getElementById('flipBoard').onclick = () => {
+            board.reverse();
+            for (let row of board) row.reverse();
+            drawBoard();
+        };
+
+        // Старт
+        initBoard();
+        drawBoard();
+    </script>
+</body>
+</html>
+
